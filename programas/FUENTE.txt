@@ -1,0 +1,8 @@
+Los programas de esta carpeta y sus casos de prueba provienen de QuixBugs:
+
+    https://github.com/jkoppel/QuixBugs
+    Copyright 2017-2019 James Koppel
+    Licencia MIT (ver LICENSE_QUIXBUGS en la raiz)
+
+Cada programa contiene exactamente UN defecto de una sola linea respecto de su
+version correcta. Se incluyen sin modificaciones.

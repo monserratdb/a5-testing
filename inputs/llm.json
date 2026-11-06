@@ -1,0 +1,10 @@
+{
+  "quicksort": [6, 7],
+  "max_sublist_sum": [3, 7],
+  "to_base": [9],
+  "is_valid_parenthesization": [12],
+  "lis": [12],
+  "longest_common_subsequence": [6],
+  "find_in_sorted": [9],
+  "kth": [12]
+}

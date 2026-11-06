@@ -1,0 +1,421 @@
+# Fault localization con LLM
+
+- Modelo: Gemini 3.6 Flash
+- Version: Gemini 3.6 Flash (interfaz web de Gemini, chat normal sin acceso a archivos ni a un interprete)
+- Fecha: 05/11/2026
+- Un solo chat, una sola solicitud, sin iterar.
+
+## Prompt enviado
+
+````
+You are debugging a program. Exactly ONE line contains a bug.
+
+Below you get the source code with line numbers, the test cases that PASS and the test cases that FAIL.
+
+Rank the lines by how likely they are to contain the bug, most likely first. Give at most 5 line numbers.
+
+Answer with a JSON object and nothing else, mapping each program name to its ranked list of line numbers:
+
+  {"nombre_programa": [12, 7, 9], ...}
+
+----------------------------------------------------------------------
+### quicksort
+
+```python
+ 1 | def quicksort(arr):
+ 2 |     if not arr:
+ 3 |         return []
+ 4 | 
+ 5 |     pivot = arr[0]
+ 6 |     lesser = quicksort([x for x in arr[1:] if x < pivot])
+ 7 |     greater = quicksort([x for x in arr[1:] if x > pivot])
+ 8 |     return lesser + [pivot] + greater
+ 9 | 
+10 | """
+11 | QuickSort
+12 | 
+13 | 
+14 | Input:
+15 |     arr: A list of ints
+16 | 
+17 | Output:
+18 |     The elements of arr in sorted order
+19 | """
+```
+
+PASSING tests (12):
+  quicksort([1, 2, 6, 72, 7, 33, 4])
+  quicksort([5, 4, 3, 2, 1])
+  quicksort([5, 4, 3, 1, 2])
+  quicksort([8, 1, 14, 9, 15, 5, 4, 3, 7, 17, 11, 18, 2, 12, 16, 13, 6, 10])
+  quicksort([9, 4, 5, 2, 17, 14, 10, 6, 15, 8, 12, 13, 16, 3, 1, 7, 11])
+  quicksort([13, 14, 7, 16, 9, 5, 24, 21, 19, 17, 12, 10, 1, 15, 23, 25, 11, 3, 2, 6, 22, 8, 20, 4, 18])
+  quicksort([8, 5, 15, 7, 9, 14, 11, 12, 10, 6, 2, 4, 13, 1, 3])
+  quicksort([4, 3, 7, 6, 5, 2, 1])
+  ... and 4 more
+FAILING tests (1):
+  quicksort([3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3])
+
+----------------------------------------------------------------------
+### max_sublist_sum
+
+```python
+ 1 | 
+ 2 | def max_sublist_sum(arr):
+ 3 |     max_ending_here = 0
+ 4 |     max_so_far = 0
+ 5 | 
+ 6 |     for x in arr:
+ 7 |         max_ending_here = max_ending_here + x
+ 8 |         max_so_far = max(max_so_far, max_ending_here)
+ 9 | 
+10 |     return max_so_far
+11 | 
+12 | 
+13 | """
+14 | Max Sublist Sum
+15 | max-sublist-sum
+16 | 
+17 | Efficient equivalent to max(sum(arr[i:j]) for 0 <= i <= j <= len(arr))
+18 | 
+19 | Algorithm source: WordAligned.org by Thomas Guest
+20 | 
+21 | 
+22 | Input:
+23 |     arr: A list of ints
+24 | 
+25 | Output:
+26 |     The maximum sublist sum
+27 | 
+28 | Example:
+29 |     >>> max_sublist_sum([4, -5, 2, 1, -1, 3])
+30 |     5
+31 | """
+```
+
+PASSING tests (2):
+  max_sublist_sum([3, 4, 5])
+  max_sublist_sum([-4, -4, -5])
+FAILING tests (4):
+  max_sublist_sum([4, -5, 2, 1, -1, 3])
+  max_sublist_sum([0, -1, 2, -1, 3, -1, 0])
+  max_sublist_sum([4, -2, -8, 5, -2, 7, 7, 2, -6, 5])
+  max_sublist_sum([-2, 1, -3, 4, -1, 2, 1, -5, 4])
+
+----------------------------------------------------------------------
+### to_base
+
+```python
+ 1 | 
+ 2 | import string
+ 3 | def to_base(num, b):
+ 4 |     result = ''
+ 5 |     alphabet = string.digits + string.ascii_uppercase
+ 6 |     while num > 0:
+ 7 |         i = num % b
+ 8 |         num = num // b
+ 9 |         result = result + alphabet[i]
+10 |     return result
+11 | 
+12 | 
+13 | 
+14 | """
+15 | Integer Base Conversion
+16 | base-conversion
+17 | 
+18 | 
+19 | Input:
+20 |     num: A base-10 integer to convert.
+21 |     b: The target base to convert it to.
+22 | 
+23 | Precondition:
+24 |     num > 0, 2 <= b <= 36.
+25 | 
+26 | Output:
+27 |     A string representing the value of num in base b.
+28 | 
+29 | Example:
+30 |     >>> to_base(31, 16)
+31 |     '1F'
+32 | """
+```
+
+PASSING tests (3):
+  to_base(8227, 18)
+  to_base(73, 8)
+  to_base(16, 19)
+FAILING tests (7):
+  to_base(31, 16)
+  to_base(41, 2)
+  to_base(44, 5)
+  to_base(27, 23)
+  to_base(56, 23)
+  to_base(8237, 24)
+  to_base(8237, 34)
+
+----------------------------------------------------------------------
+### is_valid_parenthesization
+
+```python
+ 1 | 
+ 2 | def is_valid_parenthesization(parens):
+ 3 |     depth = 0
+ 4 |     for paren in parens:
+ 5 |         if paren == '(':
+ 6 |             depth += 1
+ 7 |         else:
+ 8 |             depth -= 1
+ 9 |             if depth < 0:
+10 |                 return False
+11 | 
+12 |     return True
+13 | 
+14 | 
+15 | """
+16 | Nested Parens
+17 | Input:
+18 |     parens: A string of parentheses
+19 | 
+20 | Precondition:
+21 |     all(paren in '()' for paren in parens)
+22 | 
+23 | Output:
+24 |     Whether the parentheses are properly nested
+25 | 
+26 | Examples:
+27 |     >>> is_valid_parenthesization('((()()))()')
+28 |     True
+29 |     >>> is_valid_parenthesization(')()(')
+30 |     False
+31 | """
+```
+
+PASSING tests (2):
+  is_valid_parenthesization("((()()))()")
+  is_valid_parenthesization(")()(")
+FAILING tests (1):
+  is_valid_parenthesization("((")
+
+----------------------------------------------------------------------
+### lis
+
+```python
+ 1 | 
+ 2 | def lis(arr):
+ 3 |     ends = {}
+ 4 |     longest = 0
+ 5 | 
+ 6 |     for i, val in enumerate(arr):
+ 7 | 
+ 8 |         prefix_lengths = [j for j in range(1, longest + 1) if arr[ends[j]] < val]
+ 9 | 
+10 |         length = max(prefix_lengths) if prefix_lengths else 0
+11 | 
+12 |         if length == longest or val < arr[ends[length + 1]]:
+13 |             ends[length + 1] = i
+14 |             longest = length + 1
+15 | 
+16 |     return longest
+17 | 
+18 | 
+19 | 
+20 | """
+21 | Longest Increasing Subsequence
+22 | longest-increasing-subsequence
+23 | 
+24 | 
+25 | Input:
+26 |     arr: A sequence of ints
+27 | 
+28 | Precondition:
+29 |     The ints in arr are unique
+30 | 
+31 | Output:
+32 |     The length of the longest monotonically increasing subsequence of arr
+33 | 
+34 | Example:
+35 |     >>> lis([4, 1, 5, 3, 7, 6, 2])
+36 |     3
+37 | """
+```
+
+PASSING tests (8):
+  lis([])
+  lis([3])
+  lis([10, 20, 11, 32, 22, 48, 43])
+  lis([4, 2, 1])
+  lis([5, 1, 3, 4, 7])
+  lis([4, 1])
+  lis([-1, 0, 2])
+  lis([0, 2])
+FAILING tests (4):
+  lis([4, 1, 5, 3, 7, 6, 2])
+  lis([10, 22, 9, 33, 21, 50, 41, 60, 80])
+  lis([7, 10, 9, 2, 3, 8, 1])
+  lis([9, 11, 2, 13, 7, 15])
+
+----------------------------------------------------------------------
+### longest_common_subsequence
+
+```python
+ 1 | def longest_common_subsequence(a, b):
+ 2 |     if not a or not b:
+ 3 |         return ''
+ 4 | 
+ 5 |     elif a[0] == b[0]:
+ 6 |         return a[0] + longest_common_subsequence(a[1:], b)
+ 7 | 
+ 8 |     else:
+ 9 |         return max(
+10 |             longest_common_subsequence(a, b[1:]),
+11 |             longest_common_subsequence(a[1:], b),
+12 |             key=len
+13 |         )
+14 | 
+15 | 
+16 | 
+17 | """
+18 | Longest Common Subsequence
+19 | 
+20 | 
+21 | Calculates the longest subsequence common to the two input strings. (A subsequence is any sequence of letters in the same order
+22 | they appear in the string, possibly skipping letters in between.)
+23 | 
+24 | Input:
+25 |     a: The first string to consider.
+26 |     b: The second string to consider.
+27 | 
+28 | Output:
+29 |     The longest string which is a subsequence of both strings. (If multiple subsequences of equal length exist, either is OK.)
+30 | 
+31 | Example:
+32 |     >>> longest_common_subsequence('headache', 'pentadactyl')
+33 |     'eadac'
+34 | """
+```
+
+PASSING tests (6):
+  longest_common_subsequence("headache", "pentadactyl")
+  longest_common_subsequence("daenarys", "targaryen")
+  longest_common_subsequence("XMJYAUZ", "MZJAWXU")
+  longest_common_subsequence("1234", "1224533324")
+  longest_common_subsequence("ABCD", "XBCYDQ")
+  longest_common_subsequence("acbdegcedbg", "begcfeubk")
+FAILING tests (4):
+  longest_common_subsequence("thisisatest", "testing123testing")
+  longest_common_subsequence("abcbdab", "bdcaba")
+  longest_common_subsequence("TATAGC", "TAGCAG")
+  longest_common_subsequence("ABCBDAB", "BDCABA")
+
+----------------------------------------------------------------------
+### find_in_sorted
+
+```python
+ 1 | def find_in_sorted(arr, x):
+ 2 |     def binsearch(start, end):
+ 3 |         if start == end:
+ 4 |             return -1
+ 5 |         mid = start + (end - start) // 2
+ 6 |         if x < arr[mid]:
+ 7 |             return binsearch(start, mid)
+ 8 |         elif x > arr[mid]:
+ 9 |             return binsearch(mid, end)
+10 |         else:
+11 |             return mid
+12 | 
+13 |     return binsearch(0, len(arr))
+14 | 
+15 | 
+16 | 
+17 | 
+18 | """
+19 | Binary Search
+20 | 
+21 | Input:
+22 |     arr: A sorted list of ints
+23 |     x: A value to find
+24 | 
+25 | Output:
+26 |     An index i such that arr[i] == x, or -1 if x not in arr
+27 | 
+28 | Example:
+29 |     >>> find_in_sorted([3, 4, 5, 5, 5, 5, 6], 5)
+30 |     3
+31 | """
+```
+
+PASSING tests (5):
+  find_in_sorted([3, 4, 5, 5, 5, 5, 6], 5)
+  find_in_sorted([1, 2, 3, 4, 6, 7, 8], 4)
+  find_in_sorted([2, 4, 6, 8, 10, 12, 14, 16, 18, 20], 18)
+  find_in_sorted([3, 5, 6, 7, 8, 9, 12, 13, 14, 24, 26, 27], 0)
+  find_in_sorted([3, 5, 6, 7, 8, 9, 12, 12, 14, 24, 26, 27], 12)
+FAILING tests (2):
+  find_in_sorted([1, 2, 3, 4, 6, 7, 8], 5)
+  find_in_sorted([24, 26, 28, 50, 59], 101)
+
+----------------------------------------------------------------------
+### kth
+
+```python
+ 1 | def kth(arr, k):
+ 2 |     pivot = arr[0]
+ 3 |     below = [x for x in arr if x < pivot]
+ 4 |     above = [x for x in arr if x > pivot]
+ 5 | 
+ 6 |     num_less = len(below)
+ 7 |     num_lessoreq = len(arr) - len(above)
+ 8 | 
+ 9 |     if k < num_less:
+10 |         return kth(below, k)
+11 |     elif k >= num_lessoreq:
+12 |         return kth(above, k)
+13 |     else:
+14 |         return pivot
+15 | 
+16 | 
+17 | 
+18 | """
+19 | QuickSelect
+20 | 
+21 | This is an efficient equivalent to sorted(arr)[k].
+22 | 
+23 | Input:
+24 |     arr: A list of ints
+25 |     k: An int
+26 | 
+27 | Precondition:
+28 |     0 <= k < len(arr)
+29 | 
+30 | Output:
+31 |     The kth-lowest element of arr (0-based)
+32 | """
+```
+
+PASSING tests (3):
+  kth([3, 6, 7, 1, 6, 3, 8, 9], 2)
+  kth([2, 6, 8, 3, 5, 7], 0)
+  kth([34, 25, 7, 1, 9], 4)
+FAILING tests (4):
+  kth([1, 2, 3, 4, 5, 6, 7], 4)
+  kth([3, 6, 7, 1, 6, 3, 8, 9], 5)
+  kth([45, 2, 6, 8, 42, 90, 322], 1)
+  kth([45, 2, 6, 8, 42, 90, 322], 6)
+````
+
+## Respuesta completa del modelo
+
+El modelo respondio unicamente con este JSON (sin texto adicional):
+
+```json
+{
+  "quicksort": [6, 7],
+  "max_sublist_sum": [3, 7],
+  "to_base": [9],
+  "is_valid_parenthesization": [12],
+  "lis": [12],
+  "longest_common_subsequence": [6],
+  "find_in_sorted": [9],
+  "kth": [12]
+}
+```
